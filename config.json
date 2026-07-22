@@ -1,0 +1,16 @@
+{
+  "_readme": "DevTools launcher config. websitesRoot is relative to the DevTools folder. Set phpPath/pythonPath only if auto-detection fails.",
+  "websitesRoot": "..",
+  "host": "127.0.0.1",
+  "openBrowser": true,
+  "liveReload": true,
+  "defaultPorts": {
+    "static": 5500,
+    "php": 8080,
+    "nodejs": 3000,
+    "fastapi": 8000
+  },
+  "phpPath": "C:\\xampp\\php\\php.exe",
+  "pythonPath": null,
+  "ignoreDirs": ["DevTools", "node_modules", ".git", "xamp"]
+}

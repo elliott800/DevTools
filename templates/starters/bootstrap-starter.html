@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bootstrap 5 Starter</title>
+
+<!-- Local Bootstrap (no CDN, no npm). Copy the vendor/ folder alongside your
+     site and this keeps working offline. -->
+<link rel="stylesheet" href="../vendor/bootstrap/bootstrap.min.css">
+<style>
+  /* A touch of custom colour on top of Bootstrap's variables. */
+  :root{ --bs-primary:#c0553d; }
+  .btn-primary{ --bs-btn-bg:#c0553d; --bs-btn-border-color:#c0553d;
+                --bs-btn-hover-bg:#a2432f; --bs-btn-hover-border-color:#a2432f;
+                --bs-btn-active-bg:#8f3a2a; }
+  .hero{ background:linear-gradient(135deg,#c0553d,#8f3a2a); color:#fff; }
+  .text-primary{ color:#c0553d !important; }
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top">
+  <div class="container">
+    <a class="navbar-brand fw-bold" href="#">Bootstrap<span class="text-primary">·</span>Starter</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="nav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link active" href="#">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+        <li class="nav-item"><a class="nav-link" href="#pricing">Pricing</a></li>
+        <li class="nav-item"><button class="btn btn-primary ms-lg-3" data-bs-toggle="modal" data-bs-target="#signup">Sign up</button></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<header class="hero py-5">
+  <div class="container py-5 text-center">
+    <h1 class="display-4 fw-bold">Ship faster with Bootstrap 5</h1>
+    <p class="lead col-lg-7 mx-auto">Grid, components, and utilities — all served locally from your
+      own <code class="text-white">vendor/</code> folder. No build step, no CDN.</p>
+    <div class="d-flex gap-3 justify-content-center mt-4">
+      <button class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#signup">Get started</button>
+      <a class="btn btn-outline-light btn-lg" href="#features">Learn more</a>
+    </div>
+  </div>
+</header>
+
+<section id="features" class="py-5">
+  <div class="container">
+    <h2 class="text-center mb-5 fw-bold">What you get</h2>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body">
+            <h5 class="card-title">Responsive grid</h5>
+            <p class="card-text text-muted">12-column layout that reflows to any screen using simple <code>col-*</code> classes.</p>
+            <span class="badge text-bg-primary">Layout</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body">
+            <h5 class="card-title">Components</h5>
+            <p class="card-text text-muted">Navbars, modals, cards, alerts, toasts — battle-tested and accessible out of the box.</p>
+            <span class="badge text-bg-primary">UI</span>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 shadow-sm border-0">
+          <div class="card-body">
+            <h5 class="card-title">Utilities</h5>
+            <p class="card-text text-muted">Spacing, flex, colour, and display helpers so you rarely write custom CSS.</p>
+            <span class="badge text-bg-primary">Helpers</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing" class="py-5 bg-light">
+  <div class="container">
+    <div class="alert alert-warning d-flex align-items-center" role="alert">
+      <strong class="me-2">Heads up!</strong> This is a live Bootstrap alert — the JS bundle is wired up and working.
+    </div>
+  </div>
+</section>
+
+<footer class="py-4 border-top">
+  <div class="container text-center text-muted small">Bootstrap 5.3.3 · served locally · zero dependencies</div>
+</footer>
+
+<!-- Sign-up modal (needs the JS bundle below) -->
+<div class="modal fade" id="signup" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Create your account</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form>
+          <div class="mb-3"><label class="form-label">Email</label>
+            <input type="email" class="form-control" placeholder="you@example.com"></div>
+          <div class="mb-3"><label class="form-label">Password</label>
+            <input type="password" class="form-control"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary">Sign up</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../vendor/bootstrap/bootstrap.bundle.min.js"></script>
+</body>
+</html>

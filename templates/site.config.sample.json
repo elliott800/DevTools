@@ -1,0 +1,20 @@
+{
+  "_readme": "Optional. Drop this in a site folder as site.config.json to override DevTools defaults. Everything here is optional — delete keys you don't need.",
+  "type": "static",
+  "_type_help": "static | php | nodejs | fastapi. Auto-detected if omitted: package.json=nodejs, requirements.txt/main.py=fastapi, *.php=php, else static.",
+
+  "port": null,
+  "env": {},
+
+  "app": null,
+  "_app_help": "fastapi only: ASGI target like \"main:app\". Auto-detected if omitted.",
+
+  "router": null,
+  "_router_help": "php only: path to a router script (e.g. router.php). Auto-used if a router.php exists.",
+
+  "start_command": null,
+  "_start_help": "nodejs/fastapi: run this exact command instead of the default (runs in the site folder, shell).",
+
+  "liveReload": true,
+  "openBrowser": true
+}

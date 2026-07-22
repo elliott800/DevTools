@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>jQuery Starter</title>
+<style>
+  :root{--bg:#f5f0e6;--surface:#fbf8f1;--ink:#211d18;--muted:#6d655a;--accent:#c0553d;--line:rgba(33,29,24,.14)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
+    line-height:1.55;max-width:760px;margin:0 auto;padding:2.5rem 1.25rem}
+  h1{font-size:2rem;margin-bottom:.25rem}
+  .sub{color:var(--muted);margin-bottom:2rem}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.5rem;margin-bottom:1.5rem}
+  h2{font-size:1.05rem;margin-bottom:1rem}
+  input,button{font:inherit}
+  input[type=text]{width:100%;padding:.6rem .8rem;border:1px solid var(--line);border-radius:9px;background:#fff}
+  button{cursor:pointer;border:none;border-radius:9px;padding:.55rem 1rem;font-weight:600;background:var(--ink);color:var(--bg)}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+  .row{display:flex;gap:.6rem;margin-bottom:1rem}
+  ul{list-style:none}
+  li{display:flex;align-items:center;gap:.6rem;padding:.55rem .2rem;border-bottom:1px solid var(--line)}
+  li.done span{text-decoration:line-through;color:var(--muted)}
+  li .x{margin-left:auto;color:var(--accent);cursor:pointer;font-weight:700;opacity:.6}
+  li .x:hover{opacity:1}
+  .count{color:var(--accent);font-weight:700}
+  .box{font-size:2.5rem;font-weight:800;color:var(--accent);text-align:center}
+  .muted{color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+  <h1>jQuery Starter</h1>
+  <p class="sub">jQuery 3.7.1, served locally. Three tiny demos of the classics: events, effects, and DOM building.</p>
+
+  <div class="card">
+    <h2>1 · Live filter (<code>.on('input')</code> + <code>.filter()</code>)</h2>
+    <input type="text" id="search" placeholder="Type to filter the fruit…">
+    <ul id="fruit">
+      <li><span>Apricot</span></li><li><span>Blackberry</span></li><li><span>Clementine</span></li>
+      <li><span>Damson</span></li><li><span>Elderberry</span></li><li><span>Fig</span></li>
+    </ul>
+    <p class="muted"><span class="count" id="shown">6</span> shown</p>
+  </div>
+
+  <div class="card">
+    <h2>2 · To-do (<code>.append()</code>, delegated clicks, <code>.fadeOut()</code>)</h2>
+    <div class="row">
+      <input type="text" id="todoInput" placeholder="Add a task and press Enter…">
+      <button id="add">Add</button>
+    </div>
+    <ul id="todos">
+      <li class="done"><span>Vendor the libraries</span><span class="x">✕</span></li>
+      <li><span>Build the starters</span><span class="x">✕</span></li>
+    </ul>
+    <p class="muted">Click text to toggle done · ✕ to remove</p>
+  </div>
+
+  <div class="card">
+    <h2>3 · Counter (<code>.text()</code> + <code>.animate()</code>)</h2>
+    <div class="box" id="counter">0</div>
+    <div class="row" style="justify-content:center;margin-top:1rem">
+      <button class="ghost" id="dec">−</button>
+      <button id="inc">+</button>
+      <button class="ghost" id="reset">reset</button>
+    </div>
+  </div>
+
+<script src="../vendor/jquery/jquery.min.js"></script>
+<script>
+$(function () {
+  // 1 · live filter
+  $('#search').on('input', function () {
+    const q = $(this).val().toLowerCase();
+    let shown = 0;
+    $('#fruit li').each(function () {
+      const match = $(this).text().toLowerCase().includes(q);
+      $(this).toggle(match);
+      if (match) shown++;
+    });
+    $('#shown').text(shown);
+  });
+
+  // 2 · to-do
+  function addTodo(text) {
+    if (!text.trim()) return;
+    $('<li>').append($('<span>').text(text), $('<span class="x">✕</span>')).appendTo('#todos');
+  }
+  $('#add').on('click', () => { addTodo($('#todoInput').val()); $('#todoInput').val('').focus(); });
+  $('#todoInput').on('keydown', e => { if (e.key === 'Enter') $('#add').click(); });
+  $('#todos').on('click', 'span:not(.x)', function () { $(this).parent().toggleClass('done'); });
+  $('#todos').on('click', '.x', function () { $(this).parent().fadeOut(200, function () { $(this).remove(); }); });
+
+  // 3 · counter
+  let n = 0;
+  const paint = () => $('#counter').text(n);
+  $('#inc').on('click', () => { n++; paint(); });
+  $('#dec').on('click', () => { n--; paint(); });
+  $('#reset').on('click', () => { n = 0; $('#counter').css('opacity', .3).text(0).animate({ opacity: 1 }, 400); });
+});
+</script>
+</body>
+</html>

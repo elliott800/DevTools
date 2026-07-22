@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<!--
+  HTML & CSS starter — in the teaching style of Jon Duckett's
+  "HTML & CSS: Design and Build Websites".
+
+  The whole point of this file is that the MARKUP describes MEANING
+  (structure), and ALL of the look lives in css/style.css. Read the
+  comments top-to-bottom; each one names the semantic element and why
+  it's used. This is original code (MIT), not from the book.
+-->
+<html lang="en">
+<head>
+  <!-- Always declare the character set first, and a responsive viewport. -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seedling &amp; Stone — HTML &amp; CSS Starter</title>
+  <meta name="description" content="A semantic, well-structured HTML5 page with an external stylesheet.">
+
+  <!-- Styles live in a separate file so structure and presentation stay apart. -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- <header> = introductory content for the page: logo + primary navigation. -->
+  <header class="site-header">
+    <div class="container">
+      <p class="logo">Seedling <span>&amp;</span> Stone</p>
+
+      <!-- <nav> marks the block of MAJOR navigation links. -->
+      <nav>
+        <ul>
+          <li><a href="#about">About</a></li>
+          <li><a href="#work">Work</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- <main> = the one, unique, primary content area of the page. -->
+  <main>
+
+    <!-- A <section> groups related content and usually has a heading. -->
+    <section class="hero" id="about">
+      <div class="container">
+        <h1>We grow calm, useful things.</h1>
+        <p class="lead">
+          A tiny studio for gardens, ceramics, and the quiet web pages
+          that hold them together.
+        </p>
+        <p><a class="button" href="#contact">Say hello</a></p>
+      </div>
+    </section>
+
+    <section class="work" id="work">
+      <div class="container">
+        <h2>Selected work</h2>
+
+        <!-- Each project is an <article>: a self-contained, reusable piece. -->
+        <div class="cards">
+          <article class="card">
+            <h3>The Kitchen Garden</h3>
+            <p>A raised-bed planting plan and a one-page site to track the harvest.</p>
+            <p class="meta">Landscape &middot; 2025</p>
+          </article>
+
+          <article class="card">
+            <h3>Stoneware Series No.4</h3>
+            <p>Hand-thrown mugs, photographed and catalogued for a small shop.</p>
+            <p class="meta">Ceramics &middot; 2025</p>
+          </article>
+
+          <article class="card">
+            <h3>Field Notes</h3>
+            <p>A slow, readable journal built from plain HTML — no framework.</p>
+            <p class="meta">Writing &middot; 2024</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- <aside> = content tangential to the main flow (a pull-quote here). -->
+    <aside class="quote">
+      <div class="container">
+        <blockquote>
+          &ldquo;Make the structure honest, and the styling has less to hide.&rdquo;
+        </blockquote>
+      </div>
+    </aside>
+
+    <section class="contact" id="contact">
+      <div class="container">
+        <h2>Get in touch</h2>
+        <!--
+          A real form. `label` is tied to each input with for/id so the
+          form is usable and accessible. `type` and `required` give the
+          browser free validation before any JavaScript is involved.
+        -->
+        <form action="#" method="post" class="signup">
+          <p>
+            <label for="name">Your name</label>
+            <input type="text" id="name" name="name" required>
+          </p>
+          <p>
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" required>
+          </p>
+          <p>
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="4"></textarea>
+          </p>
+          <p><button type="submit" class="button">Send message</button></p>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- <footer> = closing information for the page. -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; <span id="year">2026</span> Seedling &amp; Stone. Built with honest HTML.</p>
+    </div>
+  </footer>
+
+  <!--
+    One tiny script, kept at the very end so the page renders first.
+    In Duckett's JavaScript book this is where behaviour would go.
+  -->
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

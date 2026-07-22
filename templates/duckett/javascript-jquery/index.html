@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<!--
+  JavaScript & jQuery starter — in the teaching style of Jon Duckett's
+  "JavaScript & jQuery: Interactive Front-End Web Development".
+
+  Two classic interactions (TABS and a NOTE LIST) are implemented TWICE:
+    • js/scripts.js         — plain, modern JavaScript
+    • js/scripts.jquery.js  — the same behaviour written with jQuery
+  The page loads the vanilla version by default. To compare, comment out
+  the first <script> at the bottom and uncomment the jQuery pair.
+  Original code (MIT).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JavaScript &amp; jQuery Starter</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, Helvetica, sans-serif; line-height: 1.6;
+      color: #2f2d2a; background: #f7f4ee; max-width: 680px; margin: 0 auto; padding: 2.5rem 1.25rem; }
+    h1 { font-family: Georgia, serif; font-weight: normal; margin-bottom: .25rem; }
+    h2 { font-family: Georgia, serif; font-weight: normal; font-size: 1.2rem; margin-bottom: 1rem; }
+    .sub { color: #6a655c; margin-bottom: 2rem; }
+    .panel { background: #fffdf9; border: 1px solid #e2dccf; border-radius: 8px;
+      padding: 1.5rem; margin-bottom: 1.5rem; }
+
+    /* Tabs */
+    .tabs { list-style: none; display: flex; gap: .4rem; border-bottom: 1px solid #e2dccf; margin-bottom: 1rem; }
+    .tabs a { display: block; text-decoration: none; color: #6a655c; padding: .5rem .9rem;
+      border-radius: 6px 6px 0 0; }
+    .tabs a.active { background: #3f6f4a; color: #fff; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Note list */
+    .add { display: flex; gap: .5rem; margin-bottom: 1rem; }
+    .add input { flex: 1; padding: .55rem .7rem; font: inherit; border: 1px solid #cfc8b9;
+      border-radius: 6px; background: #fffdf9; }
+    button { font: inherit; cursor: pointer; border: none; border-radius: 6px;
+      padding: .55rem 1rem; background: #3f6f4a; color: #fff; }
+    ul.notes { list-style: none; }
+    ul.notes li { display: flex; align-items: center; gap: .5rem;
+      padding: .55rem .2rem; border-bottom: 1px solid #e2dccf; }
+    ul.notes .remove { margin-left: auto; color: #b04a34; cursor: pointer; font-weight: bold; opacity: .6; }
+    ul.notes .remove:hover { opacity: 1; }
+    .hint { color: #9a9386; font-size: .85rem; }
+    code { background: #efe9dd; padding: .1rem .35rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+
+  <h1>Interactive front-end starter</h1>
+  <p class="sub">The same two behaviours in plain JavaScript and in jQuery — swap the
+     scripts at the bottom to compare.</p>
+
+  <!-- ============ DEMO 1 · TABS ============ -->
+  <div class="panel">
+    <h2>1 &middot; Tabbed panel</h2>
+    <ul class="tabs" id="tabs">
+      <li><a href="#" class="active" data-tab="intro">Intro</a></li>
+      <li><a href="#" data-tab="events">Events</a></li>
+      <li><a href="#" data-tab="dom">DOM</a></li>
+    </ul>
+    <div class="tab-panel active" data-panel="intro">
+      <p>Click the tabs. One handler on the list uses <em>event delegation</em> to
+         figure out which tab was clicked.</p>
+    </div>
+    <div class="tab-panel" data-panel="events">
+      <p>Behaviour is attached with <code>addEventListener</code> — never inline
+         <code>onclick</code> attributes.</p>
+    </div>
+    <div class="tab-panel" data-panel="dom">
+      <p>Showing a panel is just toggling a CSS class with
+         <code>classList</code>, not editing styles by hand.</p>
+    </div>
+  </div>
+
+  <!-- ============ DEMO 2 · NOTE LIST ============ -->
+  <div class="panel">
+    <h2>2 &middot; Note list</h2>
+    <div class="add">
+      <input type="text" id="noteInput" placeholder="Write a note and press Enter…">
+      <button id="addNote">Add</button>
+    </div>
+    <ul class="notes" id="notes">
+      <li><span>Read chapter 5: the DOM</span><span class="remove">&times;</span></li>
+      <li><span>Try event delegation</span><span class="remove">&times;</span></li>
+    </ul>
+    <p class="hint">Click &times; to remove. New notes are built with <code>createElement</code>.</p>
+  </div>
+
+  <!-- ===================== SCRIPTS =====================
+       DEFAULT: plain JavaScript. -->
+  <script src="js/scripts.js"></script>
+
+  <!-- COMPARE WITH jQUERY: comment out the line above, then uncomment these two.
+       The jQuery file is the shared local copy in templates/vendor, so for this
+       version serve the whole templates folder:  node serve.js templates
+       then open /duckett/javascript-jquery/  (otherwise ../../vendor is out of reach).
+  <script src="../../vendor/jquery/jquery.min.js"></script>
+  <script src="js/scripts.jquery.js"></script>
+  -->
+</body>
+</html>

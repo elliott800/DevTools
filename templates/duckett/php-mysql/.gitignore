@@ -1,0 +1,5 @@
+# Runtime database created by the guestbook on first run — don't commit it.
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

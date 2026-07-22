@@ -1,0 +1,100 @@
+/* =========================================================================
+   style.css — all presentation for index.html.
+   Ordered the way Duckett's HTML & CSS book introduces things:
+   1. a small reset   2. typography   3. colour   4. layout   5. components
+   ========================================================================= */
+
+/* 1 · RESET ---------------------------------------------------------------
+   Remove the browser's default margins/padding and use border-box so
+   padding never blows out an element's width. */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* 2 · TYPOGRAPHY ----------------------------------------------------------
+   A serif for headings (editorial, book-like) and a sans for body text. */
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 100%;              /* = 16px; children use rem/em from here */
+  line-height: 1.6;
+  color: #33312e;
+  background-color: #f7f4ee;
+}
+h1, h2, h3 { font-family: Georgia, serif; line-height: 1.2; font-weight: normal; }
+h1 { font-size: 2.75rem; }
+h2 { font-size: 1.9rem; margin-bottom: 1.5rem; }
+h3 { font-size: 1.25rem; margin-bottom: .4rem; }
+p  { margin-bottom: 1rem; }
+
+/* 3 · COLOUR (as reusable ideas) -----------------------------------------
+   Kept few and deliberate: ink, paper, a single leaf-green accent. */
+a         { color: #3f6f4a; }
+a:hover   { color: #2c4e34; }
+
+/* 4 · LAYOUT --------------------------------------------------------------
+   `.container` centres content and caps its width — reused in every band. */
+.container { width: 90%; max-width: 960px; margin: 0 auto; }
+
+/* 5 · COMPONENTS ---------------------------------------------------------- */
+
+/* Header + navigation */
+.site-header { border-bottom: 1px solid #e2dccf; background: #fffdf9; }
+.site-header .container { display: flex; align-items: center;
+  justify-content: space-between; padding: 1.1rem 0; }
+.logo { font-size: 1.4rem; letter-spacing: .02em; }
+.logo span { color: #3f6f4a; }
+nav ul { list-style: none; display: flex; gap: 1.5rem; }
+nav a { text-decoration: none; font-family: Arial, Helvetica, sans-serif;
+  font-size: .95rem; }
+nav a:hover { text-decoration: underline; }
+
+/* Hero */
+.hero { padding: 4.5rem 0; }
+.hero .lead { font-size: 1.25rem; max-width: 34ch; color: #6a655c; }
+
+/* A reusable button, styled once and used anywhere */
+.button {
+  display: inline-block; text-decoration: none;
+  font-family: Arial, Helvetica, sans-serif; font-size: .95rem;
+  background: #3f6f4a; color: #fff; padding: .7rem 1.4rem; border-radius: 4px;
+  border: none; cursor: pointer;
+}
+.button:hover { background: #2c4e34; color: #fff; }
+
+/* Work — a simple, responsive card grid using floats' modern replacement */
+.work { padding: 3.5rem 0; border-top: 1px solid #e2dccf; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.card {
+  background: #fffdf9; border: 1px solid #e2dccf; border-radius: 6px;
+  padding: 1.5rem;
+}
+.card .meta { font-family: Arial, sans-serif; font-size: .8rem;
+  color: #9a938668; color: #9a9386; margin-bottom: 0; }
+
+/* Pull-quote aside */
+.quote { padding: 3.5rem 0; background: #efe9dd; }
+blockquote { font-size: 1.6rem; font-style: italic; text-align: center;
+  max-width: 30ch; margin: 0 auto; color: #4a463f; }
+
+/* Contact form */
+.contact { padding: 3.5rem 0; border-top: 1px solid #e2dccf; }
+.signup { max-width: 440px; }
+.signup label { display: block; font-family: Arial, sans-serif;
+  font-size: .85rem; margin-bottom: .3rem; color: #6a655c; }
+.signup input, .signup textarea {
+  width: 100%; padding: .6rem .7rem; font: inherit; font-size: 1rem;
+  border: 1px solid #cfc8b9; border-radius: 4px; background: #fffdf9;
+}
+.signup input:focus, .signup textarea:focus {
+  outline: none; border-color: #3f6f4a;
+}
+
+/* Footer */
+.site-footer { border-top: 1px solid #e2dccf; padding: 2rem 0;
+  font-family: Arial, sans-serif; font-size: .85rem; color: #9a9386; }
+
+/* 6 · RESPONSIVE ----------------------------------------------------------
+   Stack the cards and header nav on narrow screens. */
+@media (max-width: 700px) {
+  .site-header .container { flex-direction: column; gap: .8rem; }
+  h1 { font-size: 2.1rem; }
+  .cards { grid-template-columns: 1fr; }
+}

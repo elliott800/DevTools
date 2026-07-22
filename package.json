@@ -1,0 +1,16 @@
+{
+  "name": "devtools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zero-dependency local dev server launcher for static / PHP / Node.js / FastAPI sites. No node_modules ever.",
+  "bin": {
+    "serve-site": "serve.js"
+  },
+  "scripts": {
+    "list": "node serve.js --list",
+    "help": "node serve.js --help"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

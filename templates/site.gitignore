@@ -1,0 +1,48 @@
+# --- Dependencies (never commit — keeps repos clean & lightweight) ---
+node_modules/
+.pnp
+.pnp.js
+vendor/
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+
+# --- Build output ---
+dist/
+build/
+.next/
+.nuxt/
+.output/
+.svelte-kit/
+.cache/
+*.tsbuildinfo
+
+# --- Local databases & WAL sidecars ---
+*.db-shm
+*.db-wal
+*.sqlite-shm
+*.sqlite-wal
+
+# --- Deploy artifacts ---
+deploy-*.zip
+*.tar
+*.tar.gz
+
+# --- Dev server logs ---
+dev-server-*.log
+dev-server-*.err
+*.log
+
+# --- Secrets & local env ---
+.env
+.env.local
+.env.*.local
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/

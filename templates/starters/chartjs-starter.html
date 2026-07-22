@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chart.js Starter</title>
+<style>
+  :root{--bg:#f5f0e6;--surface:#fbf8f1;--ink:#211d18;--muted:#6d655a;--line:rgba(33,29,24,.14)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);
+    line-height:1.5;max-width:960px;margin:0 auto;padding:2.5rem 1.25rem}
+  h1{font-size:2rem}.sub{color:var(--muted);margin-bottom:2rem}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+  @media(max-width:720px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:1.25rem}
+  .card h2{font-size:1rem;margin-bottom:.75rem;color:var(--muted)}
+  .full{grid-column:1/-1}
+  canvas{max-width:100%}
+</style>
+</head>
+<body>
+  <h1>Chart.js Starter</h1>
+  <p class="sub">Chart.js 4.4.3, served locally (zero dependencies — v4 dropped moment.js). Four chart types
+     sharing one warm palette defined once below.</p>
+
+  <div class="grid">
+    <div class="card"><h2>Bar</h2><canvas id="bar"></canvas></div>
+    <div class="card"><h2>Doughnut</h2><canvas id="doughnut"></canvas></div>
+    <div class="card full"><h2>Line</h2><canvas id="line"></canvas></div>
+  </div>
+
+<script src="../vendor/chartjs/chart.umd.min.js"></script>
+<script>
+  // One palette, reused everywhere.
+  const PALETTE = ['#c0553d', '#2f6f5e', '#b98a2e', '#3f6ca8', '#8a5cc0', '#c04d78'];
+  Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+  Chart.defaults.color = '#6d655a';
+
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+
+  new Chart(document.getElementById('bar'), {
+    type: 'bar',
+    data: {
+      labels: MONTHS,
+      datasets: [{ label: 'Revenue ($k)', data: [12, 19, 14, 22, 26, 31],
+        backgroundColor: PALETTE[0], borderRadius: 6 }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+
+  new Chart(document.getElementById('doughnut'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Direct', 'Search', 'Social', 'Referral', 'Email'],
+      datasets: [{ data: [35, 28, 18, 12, 7], backgroundColor: PALETTE, borderColor: '#fbf8f1', borderWidth: 2 }]
+    },
+    options: { plugins: { legend: { position: 'right' } } }
+  });
+
+  new Chart(document.getElementById('line'), {
+    type: 'line',
+    data: {
+      labels: MONTHS,
+      datasets: [
+        { label: 'Sessions', data: [820, 932, 901, 1120, 1290, 1450],
+          borderColor: PALETTE[0], backgroundColor: 'rgba(192,85,61,.12)', fill: true, tension: .35 },
+        { label: 'Signups', data: [120, 145, 138, 180, 210, 260],
+          borderColor: PALETTE[1], backgroundColor: 'rgba(47,111,94,.12)', fill: true, tension: .35 }
+      ]
+    },
+    options: { plugins: { legend: { position: 'top' } }, interaction: { intersect: false, mode: 'index' } }
+  });
+</script>
+</body>
+</html>
