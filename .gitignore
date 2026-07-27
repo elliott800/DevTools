@@ -1,0 +1,9 @@
+# Local secrets — never commit
+.pg-credentials.json
+.env
+.env.local
+.env.*.local
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db

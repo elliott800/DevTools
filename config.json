@@ -10,6 +10,7 @@
     "nodejs": 3000,
     "fastapi": 8000
   },
+  "controlPort": 47913,
   "phpPath": "C:\\xampp\\php\\php.exe",
   "pythonPath": null,
   "ignoreDirs": ["DevTools", "node_modules", ".git", "xamp"]

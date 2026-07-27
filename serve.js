@@ -39,6 +39,8 @@ const DEFAULT_CONFIG = {
   openBrowser: true,
   liveReload: true,
   defaultPorts: { static: 5500, php: 8080, nodejs: 3000, fastapi: 8000 },
+  // Loopback control port used for CLI ↔ DevTools-process IPC (multi-site mode).
+  controlPort: 47913,
   // Explicit binary paths (leave null to auto-detect from PATH / common spots).
   phpPath: null,
   pythonPath: null,
@@ -88,6 +90,8 @@ function parseArgs(argv) {
       case '-h': case '--help': opts.help = true; break;
       case '-l': case '--list': opts.list = true; break;
       case '--init': opts.init = true; break;
+      case '--stop': opts.stop = true; break;
+      case '--daemon': opts.daemon = true; break;
       case '--no-open': opts.open = false; break;
       case '--no-reload': opts.reload = false; break;
       case '-p': case '--port': opts.port = Number(argv[++i]); break;
@@ -106,9 +110,16 @@ function parseArgs(argv) {
 
 const HELP = `${c.bold}DevTools — local dev server launcher${c.reset}
 
-  ${c.cyan}node serve.js <site> [options]${c.reset}
+  ${c.cyan}node serve.js <site> [<site2> ...] [options]${c.reset}
 
 <site> is a folder name under the websites root (fuzzy matched) or a path.
+Pass more than one to serve several sites at once.
+
+DevTools runs as a single process. The first site you serve opens a
+dedicated "DevTools" terminal window that stays running; every site you
+serve after that (from any terminal) is picked up by that same window's
+process instead of opening a new one. Ctrl+C in that window, or
+${c.cyan}node serve.js --stop${c.reset}, shuts every site down together.
 
 Options:
   -p, --port <n>    Override the port
@@ -116,17 +127,22 @@ Options:
       --host <h>    Bind host (default 127.0.0.1)
       --no-open     Don't open the browser
       --no-reload   Disable live reload (static sites)
-  -l, --list        List all sites and their detected types
+  -l, --list        List all sites (marks the ones currently running)
       --init        Scaffold site.config.json + .gitignore into <site>, then exit
+      --stop [site] Stop the whole DevTools process, or just one running site
+      --daemon      Run as the DevTools process in this terminal (no new window)
   -h, --help        Show this help
 
 Examples:
   node serve.js www.test.com
   node serve.js test                 # fuzzy match
   node serve.js hearts --port 4000
+  node serve.js siteA siteB          # serve multiple sites at once
   node serve.js www.place_holder.com --type php
   node serve.js --list
   node serve.js www.test.com --init
+  node serve.js --stop               # shut the whole DevTools process down
+  node serve.js --stop siteA         # stop just one site, leave the rest running
 `;
 
 // ---------------------------------------------------------------------------
@@ -503,6 +519,231 @@ function initSite(dir) {
 }
 
 // ---------------------------------------------------------------------------
+// Single-process, multi-site daemon
+//
+// Only one DevTools process ever binds `controlPort`. The first `serve.js
+// <site>` call becomes that process (in its own dedicated terminal window);
+// every later call — for the same site or a different one — just talks to
+// it over a loopback socket and the existing process starts the extra site
+// itself. One Ctrl+C (or `--stop`) tears every site running under it down
+// together.
+// ---------------------------------------------------------------------------
+
+function killChild(child) {
+  if (!child || child.killed) return;
+  if (process.platform === 'win32') {
+    // npm/uvicorn spawn their own child processes; taskkill /t kills the tree.
+    try { spawnSync('taskkill', ['/pid', String(child.pid), '/t', '/f']); } catch { /* best effort */ }
+  } else {
+    try { child.kill(); } catch { /* best effort */ }
+  }
+}
+
+async function launchSiteEntry(dir, reqOpts, cfg) {
+  const siteCfg = readSiteConfig(dir);
+  const host = reqOpts.host || cfg.host;
+  const type = reqOpts.type || siteCfg.type || detectType(dir);
+  const reload = reqOpts.reload != null ? reqOpts.reload : (siteCfg.liveReload !== false && cfg.liveReload);
+  const preferredPort = reqOpts.port || siteCfg.port || cfg.defaultPorts[type] || 8080;
+  const port = await findFreePort(preferredPort, host);
+  const url = `http://${host}:${port}/`;
+
+  let child = null;
+  let server = null;
+  switch (type) {
+    case 'static': server = startStatic(dir, { host, port, reload }); break;
+    case 'php': child = startPhp(dir, { host, port, cfg, siteCfg }); break;
+    case 'nodejs': child = startNode(dir, { port, siteCfg }); break;
+    case 'fastapi': child = startFastapi(dir, { host, port, cfg, siteCfg }); break;
+    default: throw new Error(`Unknown type "${type}". Use static|php|nodejs|fastapi.`);
+  }
+
+  const shouldOpen = reqOpts.open != null ? reqOpts.open : (siteCfg.openBrowser !== false && cfg.openBrowser);
+  if (shouldOpen) openBrowser(url);
+  if (child) {
+    child.on('exit', (code) => {
+      if (code && code !== 0) fail(`${path.basename(dir)} exited with code ${code}`);
+    });
+  }
+
+  return { dir, type, port, url, child, server };
+}
+
+function stopEntry(entry) {
+  if (entry.server) entry.server.close();
+  killChild(entry.child);
+}
+
+function shutdownDaemon(ctx) {
+  console.log('');
+  info('Shutting down DevTools (all sites)…');
+  for (const entry of ctx.sites.values()) stopEntry(entry);
+  ctx.sites.clear();
+  if (ctx.controlServer) ctx.controlServer.close();
+  setTimeout(() => process.exit(0), 300);
+}
+
+async function handleRequest(msg, ctx) {
+  switch (msg.type) {
+    case 'start': {
+      const dir = resolveSite(msg.site, ctx.cfg);
+      const existing = ctx.sites.get(dir);
+      if (existing) return { ok: true, already: true, name: path.basename(dir), url: existing.url, type: existing.type };
+      const entry = await launchSiteEntry(dir, msg.opts || {}, ctx.cfg);
+      ctx.sites.set(dir, entry);
+      return { ok: true, name: path.basename(dir), url: entry.url, type: entry.type };
+    }
+    case 'query': {
+      const results = [];
+      for (const s of msg.sites || []) {
+        try {
+          const dir = resolveSite(s, ctx.cfg);
+          const entry = ctx.sites.get(dir);
+          if (entry) results.push({ name: path.basename(dir), url: entry.url, type: entry.type });
+        } catch { /* not resolvable yet, skip */ }
+      }
+      return { ok: true, results };
+    }
+    case 'list': {
+      const results = [...ctx.sites.values()].map((e) => ({ name: path.basename(e.dir), url: e.url, type: e.type }));
+      return { ok: true, results };
+    }
+    case 'stop': {
+      if (msg.site) {
+        const dir = resolveSite(msg.site, ctx.cfg);
+        const entry = ctx.sites.get(dir);
+        if (!entry) return { ok: false, error: `${msg.site} is not currently running.` };
+        stopEntry(entry);
+        ctx.sites.delete(dir);
+        return { ok: true, stopped: path.basename(dir) };
+      }
+      setTimeout(() => shutdownDaemon(ctx), 200);
+      return { ok: true, stoppedAll: true };
+    }
+    default:
+      return { ok: false, error: `Unknown request type: ${msg.type}` };
+  }
+}
+
+function bindControlServer(cfg, ctx) {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer((socket) => {
+      let buf = '';
+      socket.on('data', (chunk) => {
+        buf += chunk.toString('utf8');
+        let idx;
+        while ((idx = buf.indexOf('\n')) !== -1) {
+          const line = buf.slice(0, idx).trim();
+          buf = buf.slice(idx + 1);
+          if (!line) continue;
+          let msg;
+          try { msg = JSON.parse(line); } catch { continue; }
+          Promise.resolve(handleRequest(msg, ctx))
+            .then((resp) => socket.write(JSON.stringify(resp) + '\n'))
+            .catch((err) => socket.write(JSON.stringify({ ok: false, error: err.message }) + '\n'));
+        }
+      });
+      socket.on('error', () => { /* client went away */ });
+    });
+    server.once('error', reject);
+    server.listen(cfg.controlPort, '127.0.0.1', () => { server.off('error', reject); resolve(server); });
+  });
+}
+
+function pingDaemon(cfg) {
+  return new Promise((resolve) => {
+    const socket = net.connect({ port: cfg.controlPort, host: '127.0.0.1' });
+    const timer = setTimeout(() => { socket.destroy(); resolve(false); }, 400);
+    socket.once('connect', () => { clearTimeout(timer); socket.end(); resolve(true); });
+    socket.once('error', () => { clearTimeout(timer); resolve(false); });
+  });
+}
+
+function sendToDaemon(cfg, msg) {
+  return new Promise((resolve, reject) => {
+    const socket = net.connect({ port: cfg.controlPort, host: '127.0.0.1' });
+    let buf = '';
+    const timer = setTimeout(() => { socket.destroy(); reject(new Error('DevTools did not respond in time.')); }, 8000);
+    socket.once('connect', () => socket.write(JSON.stringify(msg) + '\n'));
+    socket.on('data', (chunk) => {
+      buf += chunk.toString('utf8');
+      const idx = buf.indexOf('\n');
+      if (idx === -1) return;
+      clearTimeout(timer);
+      socket.end();
+      try { resolve(JSON.parse(buf.slice(0, idx))); } catch (err) { reject(err); }
+    });
+    socket.once('error', (err) => { clearTimeout(timer); reject(err); });
+  });
+}
+
+async function waitForDaemon(cfg, timeoutMs) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (await pingDaemon(cfg)) return true;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return false;
+}
+
+function spawnDaemonWindow(rawArgs) {
+  const nodeExe = process.execPath;
+  const scriptPath = path.join(DEVTOOLS_DIR, 'serve.js');
+  const args = [...rawArgs, '--daemon'];
+  const quote = (s) => (/[\s"&|<>^]/.test(s) ? `"${String(s).replace(/"/g, '\\"')}"` : s);
+  if (process.platform === 'win32') {
+    const inner = [quote(nodeExe), quote(scriptPath), ...args.map(quote)].join(' ');
+    spawn('cmd.exe', ['/c', `start "DevTools" cmd.exe /k ${inner}`], {
+      cwd: DEVTOOLS_DIR, detached: true, stdio: 'ignore', windowsHide: false,
+    }).unref();
+  } else {
+    spawn(nodeExe, [scriptPath, ...args], { cwd: DEVTOOLS_DIR, detached: true, stdio: 'ignore' }).unref();
+  }
+}
+
+async function runDaemon(cfg, siteNames, reqOpts) {
+  const ctx = { cfg, sites: new Map() };
+  let controlServer;
+  try {
+    controlServer = await bindControlServer(cfg, ctx);
+  } catch (err) {
+    if (err.code !== 'EADDRINUSE') throw err;
+    // Lost the race to become the daemon — forward our sites to the winner instead.
+    warn('Another DevTools process just started; forwarding to it.');
+    if (await pingDaemon(cfg)) {
+      for (const site of siteNames) {
+        const resp = await sendToDaemon(cfg, { type: 'start', site, opts: reqOpts });
+        if (resp.ok) ok(`${resp.already ? 'Already running' : 'Started'} ${resp.name} → ${c.cyan}${resp.url}${c.reset}`);
+        else fail(resp.error);
+      }
+    }
+    return;
+  }
+  ctx.controlServer = controlServer;
+
+  console.log(`\n${c.bold}DevTools${c.reset} ${c.dim}(control port ${cfg.controlPort})${c.reset}`);
+  info(`Websites root: ${cfg.websitesRoot}`);
+
+  for (const site of siteNames) {
+    try {
+      const dir = resolveSite(site, cfg);
+      if (ctx.sites.has(dir)) continue;
+      const entry = await launchSiteEntry(dir, reqOpts, cfg);
+      ctx.sites.set(dir, entry);
+      ok(`Serving ${c.bold}${path.basename(dir)}${c.reset} ${c.dim}(${entry.type})${c.reset} → ${c.cyan}${entry.url}${c.reset}`);
+    } catch (err) {
+      fail(`${site}: ${err.message}`);
+    }
+  }
+
+  console.log(`\n${c.dim}Listening for more sites on this window's process.${c.reset}`);
+  console.log(`${c.dim}Run "node serve.js <site>" from any terminal to add one, or Ctrl+C here to stop everything.${c.reset}\n`);
+
+  process.on('SIGINT', () => shutdownDaemon(ctx));
+  process.on('SIGTERM', () => shutdownDaemon(ctx));
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -512,14 +753,37 @@ async function main() {
 
   if (opts.help) { console.log(HELP); return; }
 
+  if (opts.stop) {
+    const site = opts._[0] || null;
+    if (!(await pingDaemon(cfg))) { warn('DevTools is not running.'); return; }
+    try {
+      const resp = await sendToDaemon(cfg, { type: 'stop', site });
+      if (!resp.ok) { fail(resp.error); process.exitCode = 1; return; }
+      if (resp.stoppedAll) ok('DevTools stopped (all sites).');
+      else ok(`Stopped ${resp.stopped}.`);
+    } catch (err) {
+      fail(err.message); process.exitCode = 1;
+    }
+    return;
+  }
+
   if (opts.list) {
     const sites = listSiteDirs(cfg);
+    let running = [];
+    if (await pingDaemon(cfg)) {
+      try {
+        const resp = await sendToDaemon(cfg, { type: 'list' });
+        if (resp.ok) running = resp.results;
+      } catch { /* best-effort */ }
+    }
     console.log(`${c.bold}Sites in ${cfg.websitesRoot}${c.reset}\n`);
     for (const name of sites) {
       const dir = path.join(cfg.websitesRoot, name);
       const sc = readSiteConfig(dir);
       const type = sc.type || detectType(dir);
-      console.log(`  ${c.green}${type.padEnd(8)}${c.reset} ${name}`);
+      const live = running.find((r) => r.name === name);
+      const tag = live ? `${c.green} [running → ${live.url}]${c.reset}` : '';
+      console.log(`  ${c.green}${type.padEnd(8)}${c.reset} ${name}${tag}`);
     }
     console.log(`\nServe one with: ${c.cyan}node serve.js <name>${c.reset}`);
     return;
@@ -527,80 +791,57 @@ async function main() {
 
   if (opts._.length === 0) { console.log(HELP); return; }
 
-  let dir;
-  try {
-    dir = resolveSite(opts._[0], cfg);
-  } catch (err) {
-    fail(err.message); process.exitCode = 1; return;
-  }
-
-  if (opts.init) { initSite(dir); return; }
-
-  const siteCfg = readSiteConfig(dir);
-  const host = opts.host || cfg.host;
-  const type = opts.type || siteCfg.type || detectType(dir);
-  const reload = opts.reload !== null ? opts.reload : (siteCfg.liveReload !== false && cfg.liveReload);
-  const preferredPort = opts.port || siteCfg.port || cfg.defaultPorts[type] || 8080;
-
-  let port;
-  try {
-    port = await findFreePort(preferredPort, host);
-    if (port !== preferredPort) info(`Port ${preferredPort} busy, using ${port}`);
-  } catch (err) {
-    fail(err.message); process.exitCode = 1; return;
-  }
-
-  const url = `http://${host}:${port}/`;
-  console.log(`\n${c.bold}${path.basename(dir)}${c.reset}  ${c.dim}(${type})${c.reset}`);
-  info(dir);
-
-  let child = null;
-  let server = null;
-  try {
-    switch (type) {
-      case 'static':
-        server = startStatic(dir, { host, port, reload });
-        ok(`Static server ready${reload ? ' (live reload on)' : ''}`);
-        break;
-      case 'php':
-        child = startPhp(dir, { host, port, cfg, siteCfg });
-        break;
-      case 'nodejs':
-        child = startNode(dir, { port, siteCfg });
-        break;
-      case 'fastapi':
-        child = startFastapi(dir, { host, port, cfg, siteCfg });
-        break;
-      default:
-        throw new Error(`Unknown type "${type}". Use static|php|nodejs|fastapi.`);
+  if (opts.init) {
+    let dir;
+    try {
+      dir = resolveSite(opts._[0], cfg);
+    } catch (err) {
+      fail(err.message); process.exitCode = 1; return;
     }
+    initSite(dir);
+    return;
+  }
+
+  const siteNames = opts._;
+  try {
+    for (const s of siteNames) resolveSite(s, cfg); // fail fast on typos before touching the daemon
   } catch (err) {
     fail(err.message); process.exitCode = 1; return;
   }
+  const reqOpts = { port: opts.port, type: opts.type, host: opts.host, reload: opts.reload, open: opts.open };
 
-  ok(`Serving ${c.cyan}${url}${c.reset}`);
-  console.log(`${c.dim}  Press Ctrl+C to stop${c.reset}\n`);
-
-  const shouldOpen = opts.open !== null ? opts.open : (siteCfg.openBrowser !== false && cfg.openBrowser);
-  if (shouldOpen) openBrowser(url);
-
-  // Clean shutdown.
-  const shutdown = () => {
-    console.log('');
-    info('Shutting down…');
-    if (server) server.close();
-    if (child && !child.killed) child.kill();
-    process.exit(0);
-  };
-  process.on('SIGINT', shutdown);
-  process.on('SIGTERM', shutdown);
-
-  if (child) {
-    child.on('exit', (code) => {
-      if (code && code !== 0) fail(`Server exited with code ${code}`);
-      process.exit(code || 0);
-    });
+  if (opts.daemon) {
+    await runDaemon(cfg, siteNames, reqOpts);
+    return;
   }
+
+  if (await pingDaemon(cfg)) {
+    try {
+      for (const site of siteNames) {
+        const resp = await sendToDaemon(cfg, { type: 'start', site, opts: reqOpts });
+        if (!resp.ok) { fail(resp.error); continue; }
+        ok(`${resp.already ? 'Already running' : 'Started'} ${c.bold}${resp.name}${c.reset} ${c.dim}(${resp.type})${c.reset} → ${c.cyan}${resp.url}${c.reset}`);
+      }
+      info('Running in the existing DevTools window.');
+    } catch (err) {
+      fail(err.message); process.exitCode = 1;
+    }
+    return;
+  }
+
+  info('Starting DevTools…');
+  spawnDaemonWindow(process.argv.slice(2));
+  if (!(await waitForDaemon(cfg, 10000))) {
+    fail('DevTools window did not start in time.'); process.exitCode = 1; return;
+  }
+  try {
+    const resp = await sendToDaemon(cfg, { type: 'query', sites: siteNames });
+    for (const r of resp.results || []) {
+      ok(`${c.bold}${r.name}${c.reset} ${c.dim}(${r.type})${c.reset} → ${c.cyan}${r.url}${c.reset}`);
+    }
+  } catch { /* the new window already prints its own status */ }
+  ok('DevTools is running in its own window.');
+  info(`Close that window, press Ctrl+C in it, or run ${c.cyan}node serve.js --stop${c.reset} to shut it down.`);
 }
 
 main().catch((err) => { fail(err.stack || err.message); process.exit(1); });

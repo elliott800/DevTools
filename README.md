@@ -37,6 +37,25 @@ Or use the wrappers so you can drop the `node`:
 serve www.test.com                # cmd  (serve.cmd)
 ```
 
+## One process, many sites
+
+DevTools serves every site out of a **single process**. The first site you
+serve opens a dedicated "DevTools" terminal window and stays running there;
+every site you serve after that — from any terminal, at any time — is
+handed to that same window's process instead of starting a new one:
+
+```powershell
+node serve.js www.test.com          # opens the DevTools window, serves this site
+node serve.js www.place_holder.com  # picked up by the same window, no new process
+node serve.js siteA siteB           # serve several sites in one call
+node serve.js --list                # shows which sites are currently running + their URLs
+node serve.js --stop                # stop everything (or Ctrl+C in the DevTools window)
+node serve.js --stop siteA          # stop just one site, leave the rest running
+```
+
+Under the hood, invocations talk to the running DevTools process over a
+loopback control port (`controlPort` in `config.json`, default `47913`).
+
 ## Supported site types (auto-detected)
 
 | Type      | Detected when the folder has…            | Runs                              |
@@ -131,8 +150,33 @@ PHP is auto-found at `C:\xampp\php\php.exe` and similar common spots.
 - **fastapi** uses the Python on your `PATH`; `uvicorn` must be installed there
   (`pip install uvicorn`). Extra requirements install into your Python env.
 
+## PostgreSQL
+
+PostgreSQL 17 is installed natively (via winget) as the `postgresql-x64-17`
+Windows service, listening on `127.0.0.1:5432`. It starts automatically with
+Windows, so it's always up whenever DevTools needs it.
+
+Local credentials live in `DevTools/.pg-credentials.json` (git-ignored, never
+committed):
+
+- `postgres` — superuser, for admin tasks (creating roles/databases).
+- `devtools` / database `devtools_dev` — a regular, low-privilege role
+  (with `CREATEDB`) meant for day-to-day site development.
+- `connectionString` — a ready-to-use `postgresql://…` URL for the `devtools` role.
+
+To give a site its own database, connect as `postgres` and `CREATE DATABASE
+<name> OWNER devtools`, then point that site's `site.config.json` `env` at it:
+
+```json
+{ "env": { "DATABASE_URL": "postgresql://devtools:<devPassword>@127.0.0.1:5432/<name>" } }
+```
+
+`psql` isn't on `PATH` — run it as `"C:\Program Files\PostgreSQL\17\bin\psql.exe"`,
+or add that folder to `PATH` yourself if you want it available everywhere.
+
 ## Requirements
 
 - Node.js ≥ 18 (tested on v26)
 - PHP — only for PHP sites (XAMPP is fine)
 - Python + uvicorn — only for FastAPI sites
+- PostgreSQL 17 — installed and running as a Windows service; see above

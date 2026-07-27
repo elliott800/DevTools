@@ -7,6 +7,7 @@
   .\serve.ps1 hearts -Port 4000
   .\serve.ps1 -List
   .\serve.ps1 www.test.com -Init
+  .\serve.ps1 -Stop
 #>
 [CmdletBinding()]
 param(
@@ -18,6 +19,7 @@ param(
   [switch] $NoReload,
   [switch] $List,
   [switch] $Init,
+  [switch] $Stop,
   [switch] $Help
 )
 
@@ -28,6 +30,7 @@ if ($Help)     { $argsList += '--help' }
 if ($List)     { $argsList += '--list' }
 if ($Site)     { $argsList += $Site }
 if ($Init)     { $argsList += '--init' }
+if ($Stop)     { $argsList += '--stop' }
 if ($Port)     { $argsList += @('--port', "$Port") }
 if ($Type)     { $argsList += @('--type', $Type) }
 if ($BindHost) { $argsList += @('--host', $BindHost) }
