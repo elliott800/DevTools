@@ -276,6 +276,7 @@ const MIME = {
   '.eot': 'application/vnd.ms-fontobject', '.pdf': 'application/pdf',
   '.mp4': 'video/mp4', '.webm': 'video/webm', '.mp3': 'audio/mpeg', '.wav': 'audio/wav',
   '.wasm': 'application/wasm', '.xml': 'application/xml; charset=utf-8',
+  '.php': 'text/html; charset=utf-8',
 };
 const mimeFor = (p) => MIME[path.extname(p).toLowerCase()] || 'application/octet-stream';
 
@@ -314,10 +315,12 @@ function startStatic(dir, { host, port, reload }) {
     try {
       let stat = await fsp.stat(filePath).catch(() => null);
 
-      // Directory → index.html.
+      // Directory → index.html, falling back to index.php (served as static markup).
       if (stat && stat.isDirectory()) {
-        const idx = path.join(filePath, 'index.html');
-        if (fs.existsSync(idx)) { filePath = idx; stat = await fsp.stat(filePath); }
+        const idxHtml = path.join(filePath, 'index.html');
+        const idxPhp = path.join(filePath, 'index.php');
+        if (fs.existsSync(idxHtml)) { filePath = idxHtml; stat = await fsp.stat(filePath); }
+        else if (fs.existsSync(idxPhp)) { filePath = idxPhp; stat = await fsp.stat(filePath); }
         else return sendDirListing(res, dir, filePath, pathname);
       }
 
